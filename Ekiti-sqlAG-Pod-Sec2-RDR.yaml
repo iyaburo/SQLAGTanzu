@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ekiti-rdr-sec2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ekiti-rdr-sec2
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: ekiti-rdr-sec2
+    spec:
+      terminationGracePeriodSeconds: 10
+      securityContext:
+        fsGroup: 10001
+      hostname: ekiti-rdr-sec2
+      containers:
+      - name: ekiti-rdr-sec2
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        command: ["/opt/mssql/bin/sqlservr"]
+        args: ["-T", "1800"]
+        env:
+        - name: ACCEPT_EULA
+          value: "Y"
+        - name: MSSQL_PID
+          value: "Enterprise"
+        - name: MSSQL_LCID
+          value: "1033"
+        - name: MSSQL_ENABLE_HADR
+          value: "1"
+        - name: MSSQL_AGENT_ENABLED
+          value: "true"
+        - name: MSSQL_DATA_DIR
+          value: "/var/opt/mssql/data"
+        - name: MSSQL_LOG_DIR
+          value: "/var/opt/mssqllogs/logs"
+        - name: MSSQL_DUMP_DIR
+          value: "/var/opt/mssqllogs/dump"
+        - name: MSSQL_BACKUP_DIR
+          value: "/var/opt/mssqllogs/backup"
+        - name: MSSQL_SA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mssql-secret
+              key: SA_PASSWORD
+        resources:
+          limits:
+            memory: 4G     
+        volumeMounts:
+        - name: mssqldb
+          mountPath: /var/opt/mssql/data
+        - name: mssqllogs
+          mountPath: /var/opt/mssqllogs/logs
+        - name: mssqltemp
+          mountPath: /var/opt/mssqltemp/tempdb
+      dnsConfig:
+        nameservers:
+          - 10.128.137.11
+        searches:
+          - tsalab.local
+      volumes:
+      - name: mssqldb
+        persistentVolumeClaim:
+          claimName: ekiti-rdr-sec2-data
+      - name: mssqllogs
+        persistentVolumeClaim:
+          claimName: ekiti-rdr-sec2-logs
+      - name: mssqltemp
+        persistentVolumeClaim:
+          claimName: ekiti-rdr-sec2-temp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ekiti-rdr-sec2
+spec:
+  selector:
+    app: ekiti-rdr-sec2
+  ports:
+    - name: ekiti-rdr-sec2
+      port: 1433
+      targetPort: 1433
+    - name: endpoint
+      port: 5022
+      targetPort: 5022  
+  type: LoadBalancer    

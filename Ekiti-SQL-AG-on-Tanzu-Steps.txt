@@ -1,0 +1,69 @@
+﻿# The instructions here assumes that everything has been setup on the Tanzu/TMC side
+# We also assume that the Operator has edited all the files referenced in these steps
+
+# Login to TMC and switch to the correct Namespace
+kubectl vsphere login --server 10.128.140.102 -u "tsalab\deji" --tanzu-kubernetes-cluster-name sqtanzu-worker-cluster --tanzu-kubernetes-cluster-namespace sqtanzu-namespace --insecure-skip-tls-verify
+# Enter Password
+kubectl config use-context sqtanzu-worker-cluster
+
+# Create external storage with PV and PVC for all Nodes
+kubectl apply -f ekiti-PVC-pod-RDR.yaml --record
+
+# Display the persistent volume and claim
+kubectl get pv
+kubectl get pvc
+
+# Use K8 secrets to hold required sa password for SQL Server container
+kubectl create secret generic mssql-secret --from-literal=SA_PASSWORD="VMware123456!"
+kubectl get secret mssql-secret
+
+# We're ready to now deploy and configure the actual MSSQL Server 2019 Containers
+# Deploy Primary Replica
+kubectl apply -f ekiti-sqlAG-pod-Pri-RDR.yaml --record
+
+# Deploy first Secondary Replica
+kubectl apply -f ekiti-sqlAG-pod-Sec1-RDR.yaml --record
+
+# Deploy second Secondary Replica
+kubectl apply -f ekiti-sqlAG-pod-Sec2-RDR.yaml --record
+
+# Get the status of the nodes, pods and service
+kubectl get all
+
+# Retrieve the Names and IP Address of the Nodes
+# You need to create the appropriate A Records for them in DNS
+# You will NEED the information obtained from these 2 commands to edit the .sql Scripts before proceeding
+Kubectl get pods # For names
+Kubectl get svc # For IP Addresses
+
+# Use the information obtained from the two Commands above to edit the .SQL Files
+# Run the SQL Script <ekiti-create_primaryAGP-RDR.sql> to create Primary & secondary replicas and certificates in SSMS
+# Your SSMS Query Mode should be set to SQLCMD Mode for some of the Script to work
+# Do this ONLY on Primary replica for now
+
+# Now Copy the certificates from the  primary to the local
+# First copy to local
+kubectl cp ekiti-rdr-pri-64dc77c6d5-k6klb:/var/opt/mssql/ekiti_rdr_cert.key ekiti_rdr_cert.key
+kubectl cp ekiti-rdr-pri-64dc77c6d5-k6klb:/var/opt/mssql/ekiti_rdr_cert.cert ekiti_rdr_cert.cert
+
+# Copy the certificate files from local host to secondary1
+kubectl cp ekiti_rdr_cert.key ekiti-rdr-sec1-78fbc786bf-nz8jc:/var/opt/mssql/ekiti_rdr_cert.key
+kubectl cp ekiti_rdr_cert.cert ekiti-rdr-sec1-78fbc786bf-nz8jc:/var/opt/mssql/ekiti_rdr_cert.cert
+
+# Next, copy the certificate files from local host to secondary2
+kubectl cp ekiti_rdr_cert.key ekiti-rdr-sec2-88c8474c5-kj9qm:/var/opt/mssql/ekiti_rdr_cert.key
+kubectl cp ekiti_rdr_cert.cert ekiti-rdr-sec2-88c8474c5-kj9qm:/var/opt/mssql/ekiti_rdr_cert.cert
+
+# After successfully copying the Certs over, it is time to add the Secondary Nodes to the AG
+# We will run the same Script on all the Secondary Nodes.
+# If we have done everything right, there should be no difference in the Script for all Secondary Nodes
+ekiti-create_secondaryAGS-RDR.sql
+
+# Let's fail the Primary Node and test both Tanzu Kubernetes and MSSQL Server AG
+$podname=$(kubectl get pods -l app=ekiti-rdr-pri -o custom-columns=:metadata.name)
+kubectl get services --namespace=<your-namespace> -o jsonpath="{.items[0].status.loadBalancer.ingress[0].ip}"
+echo $podname
+kubectl get pod $podname
+kubectl delete pod $podname
+# Wait for a about 10 seconds
+kubectl get pods

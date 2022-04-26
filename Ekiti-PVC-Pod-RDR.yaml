@@ -1,0 +1,119 @@
+# Create the persistent volume claim for Primary Node
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ekiti-rdr-pri-data
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "sql-tkg-policy"
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ekiti-rdr-pri-logs
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "sql-tkg-policy"
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ekiti-rdr-pri-temp
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "sql-tkg-policy"
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+# Create the persistent volume claim for Secondary Node 1
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ekiti-rdr-sec1-data
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "sql-tkg-policy"
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ekiti-rdr-sec1-logs
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "sql-tkg-policy"
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ekiti-rdr-sec1-temp
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "sql-tkg-policy"
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+# Create the persistent volume claim for Secondary Node 2
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ekiti-rdr-sec2-data
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "sql-tkg-policy"
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ekiti-rdr-sec2-logs
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "sql-tkg-policy"
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ekiti-rdr-sec2-temp
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "sql-tkg-policy"
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
